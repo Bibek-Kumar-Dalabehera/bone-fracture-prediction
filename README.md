@@ -68,11 +68,27 @@ bone_fracture_project/
 ## 📦 Datasets Used
 
 | Dataset | Source | Used For |
+```markdown
+## 📦 Datasets Used
+
+| Dataset | Used For | Direct Download |
 |---|---|---|
-| FracAtlas | HuggingFace / Kaggle | Stage 1 fracture + Stage 2 types |
-| Mendeley Fracture | Kaggle | Stage 2 major crack class |
-| pkdarabi Bone Break | Kaggle | Stage 2 hairline class |
-| MURA (Stanford) | Kaggle mirror | Stage 1 normal class |
+| **Mendeley Fracture Dataset** | Stage 1 — Fracture class | [kaggle.com/datasets/vuppalaadithyasairam/bone-fracture-detection-using-xrays](https://www.kaggle.com/datasets/vuppalaadithyasairam/bone-fracture-detection-using-xrays) |
+| **pkdarabi Bone Break** | Stage 2 — Hairline & Major Crack | [kaggle.com/datasets/pkdarabi/bone-break-classification-image-dataset](https://www.kaggle.com/datasets/pkdarabi/bone-break-classification-image-dataset) |
+
+### Dataset Split Summary
+
+| Stage | Class | Source | Train | Val | Test |
+|---|---|---|---|---|---|
+| Stage 1 | Normal | Mendeley | 2,492 | 532 | 539 |
+| Stage 1 | Fracture | Mendeley | 5,710 | 1,232 | 1,238 |
+| Stage 2 | Hairline | pkdarabi | 77 → **693** (8x aug) | 17 | 17 |
+| Stage 2 | Major Crack | pkdarabi | 222 → **1,998** (8x aug) | 48 | 48 |
+
+> [!NOTE]
+Stage 2 training counts reflect effective sample size due to oversampling and aggressive augmentation (WeightedRandomSampler). 
+```
+
 
 ---
 
