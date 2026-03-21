@@ -1,78 +1,132 @@
-# Bone Fracture Detection Project
+# 🦴 Bone Fracture Detection — 2-Stage Deep Learning Pipeline
 
-This project focuses on identifying bone fractures in X-ray images using deep learning. It employs a two-stage approach to efficiently detect and classify fractures.
+---
 
-## 📁 Directory Structure
+## 📌 Project Overview
 
-```text
-bone_fracture_project/
-├── data/
-│   ├── raw/                     # Original downloaded datasets (Mendeley, FracAtlas, pkdarabi)
-│   ├── stage1/                  # Data organized for Stage 1 (Normal vs Fracture)
-│   └── stage2/                  # Data organized for Stage 2 (Fracture Types)
-├── src/
-│   ├── model_stage1.py          # Model architecture for Stage 1
-│   ├── model_stage2.py          # Model architecture for Stage 2
-│   ├── train_stage1.py          # Training script for Stage 1
-│   ├── train_stage2.py          # Training script for Stage 2
-│   ├── prepare_data.py          # Data preprocessing and splitting script
-│   ├── dataset.py               # PyTorch Dataset class definition
-│   ├── evaluate.py              # Model evaluation script
-│   ├── inference.py             # Script for running predictions on new images
-│   └── bone_fracture.ipynb      # Jupyter Notebook for experimentation
-├── checkpoints/                 # Saved model weights
-├── results/                     # Training logs and performance metrics
-├── requirements.txt             # Project dependencies
-└── README.md                    # Project documentation
+This project detects and classifies bone fractures in X-ray images using a **two-stage deep learning approach** that mirrors real radiology workflow.
+
+---
+
+## 🧠 2-Stage Model Logic
+```
+X-ray Image
+     │
+     ▼
+┌─────────────────────────────┐
+│  STAGE 1 — EfficientNet-B4  │   Binary Classification
+│  Normal  vs  Fracture       │
+└─────────────────────────────┘
+     │
+     ├──── Normal ──────────────► ✅ Output: NORMAL (stop here)
+     │
+     └──── Fracture ────────────►
+                                  ┌─────────────────────────────┐
+                                  │  STAGE 2 — ResNet50          │   Multi-Class
+                                  │  Hairline  vs  Major Crack   │
+                                  └─────────────────────────────┘
+                                       │              │
+                                       ▼              ▼
+                                  🦴 Hairline    💥 Major Crack
 ```
 
-## 🧠 Project Logic & Workflow
+---
 
-The project follows a two-stage classification logic:
+## 📁 Project Structure
+```
+bone_fracture_project/
+├── data/
+│   ├── stage1/
+│   │   ├── train/   normal/  fracture/      (2492 + 5710 images)
+│   │   ├── val/     normal/  fracture/      (532  + 1232 images)
+│   │   └── test/    normal/  fracture/      (539  + 1238 images)
+│   └── stage2/
+│       ├── train/   hairline/  major_crack/ (77 + 222 → 693 + 1998 after aug)
+│       ├── val/     hairline/  major_crack/ (17 + 48 images)
+│       └── test/    hairline/  major_crack/ (17 + 48 images)
+├── src/
+│   ├── dataset.py          # Transforms + WeightedRandomSampler
+│   ├── model_stage1.py     # EfficientNet-B4 — binary classifier
+│   ├── model_stage2.py     # ResNet50 + FocalLoss — fracture type classifier
+│   ├── train_stage1.py     # Stage 1 training loop
+│   ├── train_stage2.py     # Stage 2 training loop
+│   ├── augment_stage2.py   # Offline data augmentation (8x multiplier)
+│   ├── evaluate.py         # Confusion matrix + ROC + Grad-CAM
+│   └── inference.py        # 2-stage cascade prediction on new images
+├── checkpoints/
+│   ├── model1_best.pth     # Best Stage 1 weights (saved by fracture recall)
+│   └── model2_best.pth     # Best Stage 2 weights (saved by macro F1)
+└── results/
+    ├── confusion_matrix_stage1.png
+    ├── confusion_matrix_stage2.png
+    ├── roc_curve_stage1.png
+    └── gradcam_samples/
+```
 
-### 1. Data Preparation (`prepare_data.py`)
-- Consolidates images from various sources (`Mendeley`, `FracAtlas`, `pkdarabi`).
-- Preprocesses images (resizing, normalization).
-- Splits the data into training, validation, and test sets.
-- Organizes data into `stage1` (binary: Normal/Fracture) and `stage2` (multi-class: Fracture types).
+---
 
-### 2. Stage 1: Fracture Detection (`model_stage1.py`, `train_stage1.py`)
-- **Objective**: Determine if an image contains a fracture or is normal.
-- **Model**: Binary classifier (e.g., ResNet or EfficientNet adapted for two classes).
-- **Output**: `Normal` or `Fracture`.
+## 📦 Datasets Used
 
-### 3. Stage 2: Fracture Classification (`model_stage2.py`, `train_stage2.py`)
-- **Objective**: If a fracture is detected in Stage 1, classify its type.
-- **Model**: Multi-class classifier trained only on fracture images.
-- **Output**: Specific fracture type (e.g., transverse, oblique, comminuted, etc.).
+| Dataset | Source | Used For |
+|---|---|---|
+| FracAtlas | HuggingFace / Kaggle | Stage 1 fracture + Stage 2 types |
+| Mendeley Fracture | Kaggle | Stage 2 major crack class |
+| pkdarabi Bone Break | Kaggle | Stage 2 hairline class |
+| MURA (Stanford) | Kaggle mirror | Stage 1 normal class |
 
-### 4. Evaluation & Inference (`evaluate.py`, `inference.py`)
-- **Evaluation**: Calculates metrics like accuracy, precision, recall, and F1-score for both stages.
-- **Inference**: A unified script that takes an image as input, runs Stage 1 to detect a fracture, and if present, runs Stage 2 to classify the type.
+---
 
-## 🚀 How to Run
+## 🏗️ Model Architecture
 
-1. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Stage 1 — EfficientNet-B4
+| Property | Value |
+|---|---|
+| Backbone | EfficientNet-B4 (ImageNet pretrained) |
+| Output classes | 2 — Normal / Fracture |
+| Loss | FocalLoss (α=0.75, γ=2.0) |
+| Key metric | **Fracture Recall ≥ 0.95** (missing a fracture is dangerous) |
+| Decision threshold | 0.40 (not 0.50 — biased toward detecting fractures) |
 
-2. **Prepare Data**:
-   ```bash
-   python src/prepare_data.py
-   ```
+### Stage 2 — ResNet50
+| Property | Value |
+|---|---|
+| Backbone | ResNet50 (ImageNet pretrained) |
+| Output classes | 2 — Hairline / Major Crack |
+| Loss | FocalLoss with inverse-frequency alpha weights |
+| Key metric | **Macro F1 ≥ 0.80** |
+| Imbalance fix | WeightedRandomSampler + 8x offline augmentation |
 
-3. **Train Stage 1**:
-   ```bash
-   python src/train_stage1.py
-   ```
+---
 
-4. **Train Stage 2**:
-   ```bash
-   python src/train_stage2.py
-   ```
+## ⚙️ Training Strategy
 
-5. **Run Inference**:
-   ```bash
-   python src/inference.py --image_path path/to/your/image.jpg
-   ```
+### Handling Class Imbalance (Stage 2)
+- Hairline images: **77** originals → **693** after 8x augmentation
+- Major crack images: **222** originals → **1,998** after 8x augmentation
+- `WeightedRandomSampler` ensures balanced batches during training
+- `FocalLoss` penalises the model more for missing minority class
+
+### Transfer Learning Approach
+```
+Phase 1 (Warmup):   Freeze backbone → train head only   (fast convergence)
+Phase 2 (Finetune): Unfreeze all   → train entire model (higher accuracy)
+```
+
+### Augmentation Pipeline (Stage 2)
+- Random rotation ±25°
+- Horizontal + vertical flip
+- Affine transforms (translate, scale, shear)
+- Color jitter (brightness, contrast)
+- Gaussian blur
+- Random erasing (simulates occlusion)
+
+---
+
+## 📊 Target Metrics
+
+| Stage | Metric | Target |
+|---|---|---|
+| Stage 1 | AUROC | ≥ 0.95 |
+| Stage 1 | Fracture Recall | ≥ 0.95 |
+| Stage 2 | Macro F1 | ≥ 0.80 |
+| Stage 2 | Hairline F1 | ≥ 0.75 |
