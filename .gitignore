@@ -39,7 +39,6 @@ data/stage1/
 data/stage2/
 data/test_img/
 checkpoints/
-results/
 *.ipynb_checkpoints/
 *.log
 *.pth
