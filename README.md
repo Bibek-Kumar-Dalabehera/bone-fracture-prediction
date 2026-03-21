@@ -67,8 +67,6 @@ bone_fracture_project/
 
 ## 📦 Datasets Used
 
-| Dataset | Source | Used For |
-```markdown
 ## 📦 Datasets Used
 
 | Dataset | Used For | Direct Download |
