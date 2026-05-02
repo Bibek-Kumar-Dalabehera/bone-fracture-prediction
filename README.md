@@ -81,12 +81,12 @@ bone_fracture_project/
 | Stage 2 | Hairline | pkdarabi | 77 → **693** (8x aug) | 17 | 17 |
 | Stage 2 | Major Crack | pkdarabi | 222 → **1,998** (8x aug) | 48 | 48 |
 
+---
+```
 > [!NOTE]
 Stage 2 training counts reflect effective sample size due to oversampling and aggressive augmentation (WeightedRandomSampler). 
 ```
-
-
-```
+---
 
 ## 🏗️ Model Architecture
 
