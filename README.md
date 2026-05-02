@@ -61,9 +61,9 @@ bone_fracture_project/
     ├── confusion_matrix_stage2.png
     ├── roc_curve_stage1.png
     └── gradcam_samples/
+```
 ---
 
-## 📦 Datasets Used
 
 ## 📦 Datasets Used
 
